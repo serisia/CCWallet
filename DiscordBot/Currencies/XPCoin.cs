@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace CCWallet.DiscordBot.Currencies
 {
-    public class XPCoin : NetworkSetBase, ICurrency
+    public class XPCoin : CurrencyBase, ICurrency
     {
         public static XPCoin Instance { get; } = new XPCoin();
 
@@ -24,7 +24,9 @@ namespace CCWallet.DiscordBot.Currencies
         decimal ICurrency.MinAmount { get; } = 0.01m;
         decimal ICurrency.MaxAmount { get; } = 1000000000m;
         decimal ICurrency.MinRainAmount { get; } = 100m;
+        Money ICurrency.MinTxFee { get; } = Money.Coins(0.00001m);     // MIN_TX_FEE = COIN * 0.00001
         int ICurrency.MaxRainUsers { get; } = 500;
+        bool ICurrency.SupportSegwit { get; } = false;
 
         private XPCoin()
         {
@@ -47,8 +49,6 @@ namespace CCWallet.DiscordBot.Currencies
         public class XPCoinTransaction : Transaction
         {
             public static readonly Money MaxMoney = Money.Coins(20000000000m); // MAX_MONEY  = COIN * 200000000000 (but NBitcoin says overflow. truncate to 20000000000)
-            public static readonly Money MinTxFee = Money.Coins(0.00001m);     // MIN_TX_FEE = COIN * 0.00001
-
             private UInt32 nTime = Convert.ToUInt32(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
             public DateTimeOffset Time
@@ -82,13 +82,12 @@ namespace CCWallet.DiscordBot.Currencies
                         memory.Position = 0;
                         base.ReadWrite(tx);
                         nTime = BitConverter.ToUInt32(header, 4);
-                        Outputs.ForEach(o => o.Value *= 100); // NOTICE: Change Unit (XP to BTC)
                     }
                     else
                     {
                         var tmp = new Transaction() {Version = Version, LockTime = LockTime};
                         tmp.Inputs.AddRange(Inputs);
-                        tmp.Outputs.AddRange(Outputs.Select(o => new TxOut(o.Value / 100, o.ScriptPubKey))); // NOTICE: Change Unit (BTC to XP)
+                        tmp.Outputs.AddRange(Outputs);
                         tmp.ReadWrite(tx);
 
                         var binary = memory.ToArray();
@@ -182,32 +181,22 @@ namespace CCWallet.DiscordBot.Currencies
                 .AddAlias("xpcoin-regtest");
         }
 
-        string ICurrency.FormatMoney(Money money, CultureInfo culture, bool symbol)
-        {
-            return ((ICurrency) this).FormatAmount(money.ToDecimal(MoneyUnit.BTC), culture, symbol);
-        }
-
-        string ICurrency.FormatAmount(decimal amount, CultureInfo culture, bool symbol)
-        {
-            return amount.ToString("N6", culture) + (symbol ? $" {CryptoCode}" : string.Empty);
-        }
-
-        Money ICurrency.CalculateFee(TransactionBuilder builder, IEnumerable<UnspentOutput.UnspentCoin> unspents)
+        public override Money CalculateFee(TransactionBuilder builder, IEnumerable<UnspentOutput.UnspentCoin> unspents)
         {
             var tx = builder.BuildTransaction(true);
             var op = tx.Inputs.Select(i => i.PrevOut).ToList();
             var bytes = tx.GetSerializedSize();
             var coins = unspents.Where(c => op.Contains(c.Outpoint));
 
-            var priority = coins.Sum(c => c.Amount.ToDecimal(MoneyUnit.Satoshi) / 100 * c.Confirms) / bytes;                        // NOTICE: Change Unit (BTC to XP)
-            var fee = priority > 576000m && bytes < 1000 ? Money.Zero : XPCoinTransaction.MinTxFee * (1 + bytes / 1000); // NOTICE: Change Unit (BTC to XP)
+            var priority = coins.Sum(c => c.Amount.ToDecimal(MoneyUnit.Satoshi) * c.Confirms) / bytes;
+            var fee = priority > 576000m && bytes < 1000 ? Money.Zero : ((ICurrency)this).MinTxFee * (1 + bytes / 1000);
 
-            fee += tx.Outputs.Count(o => o.Value < Money.CENT) * XPCoinTransaction.MinTxFee;
+            fee += tx.Outputs.Count(o => o.Value < Money.CENT) * ((ICurrency) this).MinTxFee;
 
             return fee >= 0 ? Money.Min(fee, XPCoinTransaction.MaxMoney) : XPCoinTransaction.MaxMoney;
         }
 
-        TransactionBuilder ICurrency.GeTransactionBuilder()
+        public override TransactionBuilder GeTransactionBuilder()
         {
             var builder = new TransactionBuilder()
             {
@@ -217,7 +206,7 @@ namespace CCWallet.DiscordBot.Currencies
             return builder;
         }
 
-        TransactionCheckResult ICurrency.VerifyTransaction(Transaction tx)
+        public override TransactionCheckResult VerifyTransaction(Transaction tx)
         {
             return ((XPCoinTransaction) tx).Check();
         }

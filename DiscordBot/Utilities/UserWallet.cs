@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NBitcoin.Crypto;
 using NBitcoin.Protocol;
+using CCWallet.DiscordBot.Currencies;
 
 namespace CCWallet.DiscordBot.Utilities
 {
@@ -46,6 +47,10 @@ namespace CCWallet.DiscordBot.Utilities
             User = user;
             ExtKey = key;
             ScriptPubKey = GetExtKey().ScriptPubKey;
+            if (Currency.SupportSegwit)
+            {
+                ScriptPubKey = ScriptPubKey.WitHash.ScriptPubKey;
+            }
         }
 
         public async Task UpdateBalanceAsync()
@@ -58,6 +63,7 @@ namespace CCWallet.DiscordBot.Utilities
             SetConfirmedOutPoints(result.Select(c => c.Outpoint));
             foreach (var coin in result)
             {
+                coin.Amount = Currency.ConvertMoneyUnit(coin.Amount); // Convert BaseAmountUnit
                 if (HasUnconfirmedOutPoint(coin) || coin.Confirms == 0)
                 {
                     unconfirmed.Add(coin);
@@ -91,10 +97,10 @@ namespace CCWallet.DiscordBot.Utilities
             foreach (var output in outputs)
             {
                 totalAmount += output.Value;
-                builder.Send(output.Key, ConvertMoney(output.Value));
+                builder.Send(output.Key, Currency.ConvertMoneyUnit(ConvertMoney(output.Value)));
             }
 
-            var coins = UnspentCoinSelector(ConvertMoney(totalAmount));
+            var coins = UnspentCoinSelector(Currency.ConvertMoneyUnit(ConvertMoney(totalAmount)));
             var tx = builder
                 .AddCoins(coins)
                 .SendFees(Currency.CalculateFee(builder, coins))

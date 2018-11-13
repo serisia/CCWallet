@@ -16,12 +16,16 @@ namespace CCWallet.DiscordBot.Utilities
         decimal MinAmount { get; }
         decimal MaxAmount { get; }
         decimal MinRainAmount { get; }
+        Money MinTxFee { get; }
         int MaxRainUsers { get; }
+        bool SupportSegwit { get; }
 
         string FormatMoney(Money money, CultureInfo culture, bool symbol = true);
         string FormatAmount(decimal amount, CultureInfo culture, bool symbol = true);
         Money CalculateFee(TransactionBuilder builder, IEnumerable<UnspentOutput.UnspentCoin> unspnets);
         TransactionBuilder GeTransactionBuilder();
         TransactionCheckResult VerifyTransaction(Transaction tx);
+        Money ConvertMoneyUnit(Money amount);
+        Money ConvertMoneyUnitReverse(Money amount);
     }
 }
