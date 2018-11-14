@@ -67,9 +67,9 @@ namespace CCWallet.DiscordBot.Currencies
         public virtual Money CalculateFee(TransactionBuilder builder, IEnumerable<UnspentOutput.UnspentCoin> unspents)
         {
             var tx = builder.BuildTransaction(true);
-            var bytes = tx.GetSerializedSize();
+            var bytes = tx.GetVirtualSize();
 
-            return ((ICurrency)this).ConvertMoneyUnit(((ICurrency)this).MinTxFee) * bytes / 1000;
+            return ((ICurrency)this).ConvertMoneyUnit(((ICurrency)this).MinTxFee) * bytes / 1000 + 1; // +1 for calculation error
         }
 
         public virtual TransactionBuilder GeTransactionBuilder()
