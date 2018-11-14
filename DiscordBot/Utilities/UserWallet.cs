@@ -86,7 +86,7 @@ namespace CCWallet.DiscordBot.Utilities
             UnconfirmedMoney = MoneyExtensions.Sum(unconfirmed.Select(c => c.Amount));
         }
 
-        public Transaction BuildTransaction(Dictionary<IDestination, decimal> outputs)
+        public Transaction BuildTransaction(Dictionary<IDestination, decimal> outputs, decimal feeMargin = 0m)
         {
             var builder = Currency.GeTransactionBuilder();
             builder.SetChange(Address)
@@ -100,10 +100,22 @@ namespace CCWallet.DiscordBot.Utilities
                 builder.Send(output.Key, Currency.ConvertMoneyUnit(ConvertMoney(output.Value)));
             }
 
-            var coins = UnspentCoinSelector(Currency.ConvertMoneyUnit(ConvertMoney(totalAmount)));
-            var tx = builder
-                .AddCoins(coins)
-                .SendFees(Currency.CalculateFee(builder, coins))
+            var coins = UnspentCoinSelector(Currency.ConvertMoneyUnit(ConvertMoney(totalAmount + feeMargin)));
+            builder.AddCoins(coins);
+            
+            var fee = Currency.CalculateFee(builder, coins);
+            var selectedAmount = 0m;
+            foreach (var c in coins)
+            {
+                selectedAmount += Currency.ConvertMoneyUnitReverse(c.Amount).ToDecimal(MoneyUnit.BTC);
+            }
+            
+            if (totalAmount + Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) > selectedAmount)
+            {
+                return BuildTransaction(outputs, Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC));
+            }
+            
+            var tx = builder.SendFees(fee)
                 .BuildTransaction(true);
 
             var result = Currency.VerifyTransaction(tx);
