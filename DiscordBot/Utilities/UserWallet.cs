@@ -110,7 +110,8 @@ namespace CCWallet.DiscordBot.Utilities
                 selectedAmount += Currency.ConvertMoneyUnitReverse(c.Amount).ToDecimal(MoneyUnit.BTC);
             }
             
-            if (totalAmount + Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) > selectedAmount)
+            if (totalAmount + Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) > selectedAmount
+                && feeMargin != Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC)) // fee changed
             {
                 return BuildTransaction(outputs, Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC));
             }
