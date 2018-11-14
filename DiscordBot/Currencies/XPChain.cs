@@ -21,6 +21,7 @@ namespace CCWallet.DiscordBot.Currencies
         // TODO : SET CORRECT DATA
 //        string ICurrency.IconUrl { get; } = "https://raw.githubusercontent.com/xpc-wg/xpchain/0.17-xpc/src/qt/res/icons/xpchain.png";
         string ICurrency.IconUrl { get; } = "https://user-images.githubusercontent.com/4088274/48312879-a0f71e80-e5f8-11e8-9a96-49022ade0ef1.png";
+        string ICurrency.MessageMagic { get; } = "XPChain Signed Message:\n";
         // TODO : SET CORRECT DATA
         //int ICurrency.BIP44CoinType { get; } = 0x70000001; // Mainet is undefined
         int ICurrency.BIP44CoinType { get; } = 0x00000001; // Testnet

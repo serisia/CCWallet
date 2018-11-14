@@ -16,6 +16,7 @@ namespace CCWallet.DiscordBot.Modules
         public override async Task CommandTipAsync(IUser user, decimal amount, params string[] comment) => await base.CommandTipAsync(user, amount, comment);
         public override async Task CommandWithdrawAsync(string address, decimal amount) => await base.CommandWithdrawAsync(address, amount);
         public override async Task CommandRainAsync(decimal amount, params string[] comment) => await base.CommandRainAsync(amount, comment);
-        public override async Task CommandSignMessageAsync([Remainder] string message) => await base.CommandSignMessageAsync(message);
+        //Bech32 Address is not supported for sign message in Core wallet
+        //public override async Task CommandSignMessageAsync([Remainder] string message) => await base.CommandSignMessageAsync(message);
     }
 }
