@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 
 namespace CCWallet.DiscordBot.Modules
 {
@@ -28,14 +30,53 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Help)]
         [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("help","Display this message.")]
         public virtual async Task CommandHelpAsync(string command = null)
         {
-            throw new NotImplementedException();
+            List<EmbedFieldBuilder> fields = new List<EmbedFieldBuilder>();
+
+            String prefix = Context.Message.Content.Split(BotCommand.Help)[0].Replace(" ", "");
+            Type t = this.GetType();
+            foreach(MethodInfo mi in t.GetMethods())
+            {
+                if(mi.DeclaringType != t)
+                {
+                    continue;
+                }
+
+                Type baseType = t.BaseType;
+                foreach (MethodInfo baseMi in baseType.GetMethods())
+                {
+                    if (baseMi.Name != mi.Name)
+                    {
+                        continue;
+                    }
+                    CommandAttribute attr = baseMi.GetCustomAttribute(typeof(CommandAttribute)) as CommandAttribute;
+                    if (attr != null)
+                    {
+                        CommandHelpAttribute ch = baseMi.GetCustomAttribute(typeof(CommandHelpAttribute)) as CommandHelpAttribute;
+                        fields.Add(new EmbedFieldBuilder()
+                            .WithName(String.Join(' ', new String[]{prefix, ch.Sample}))
+                            .WithValue(_(ch.Description))
+                        );
+                    }
+                    break;
+                }
+            }
+
+            await ReplySuccessAsync(_("How to use ({0} Module)", Wallet.Currency.Name), CreateEmbed(new EmbedBuilder()
+            {
+                Color = Color.DarkBlue,
+                Title = _("Module"),
+                Description = _("{0}", Wallet.Currency.Name),
+                Fields = fields
+            }));
         }
 
         [Command(BotCommand.Balance)]
         [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("balance","Display your balance.")]
         public virtual async Task CommandBalanceAsync()
         {
             await Context.Channel.TriggerTypingAsync();
@@ -64,6 +105,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Deposit)]
         [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("deposit","Display your address.")]
         public virtual async Task CommandDepositAsync()
         {
             await Context.Channel.TriggerTypingAsync();
@@ -90,6 +132,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Withdraw)]
         [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("withdraw [address] [amount]","Send your coin to [address].")]
         public virtual async Task CommandWithdrawAsync(string address, decimal amount)
         {
             await Context.Channel.TriggerTypingAsync();
@@ -106,6 +149,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Tip)]
         [RequireContext(ContextType.Guild | ContextType.Group)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("tip [@user] [amount]","Tip your coin to [@user].")]
         public virtual async Task CommandTipAsync(IUser user, decimal amount, params string[] comment)
         {
             await Context.Channel.TriggerTypingAsync();
@@ -123,6 +167,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Rain)]
         [RequireContext(ContextType.Guild | ContextType.Group)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("rain [amount]","Rain your coin to online users.")]
         public virtual async Task CommandRainAsync(decimal amount, params string[] comment)
         {
             Transaction tx = null;
@@ -188,6 +233,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.SignMessage)]
         [RequireContext(ContextType.DM)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        [CommandHelp("message sign [message]","Sign to [message] by your private key.")]
         public virtual async Task CommandSignMessageAsync([Remainder] string message)
         {
             await Context.Channel.TriggerTypingAsync();
