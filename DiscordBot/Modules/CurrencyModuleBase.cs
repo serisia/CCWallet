@@ -258,8 +258,17 @@ namespace CCWallet.DiscordBot.Modules
 
             if (tx != null)
             {
-                builder.AddField(_("Fee"), Wallet.FormatMoney(Wallet.GetFee(tx)), true);
+                Money fee = Wallet.GetFee(tx);
+                builder.AddField(_("Fee"), Wallet.FormatMoney(fee), true);
                 builder.AddField(_("Transaction"), tx.GetHash());
+                if(result){
+                    decimal change = - totalAmount - fee.ToDecimal(MoneyUnit.BTC);
+                    foreach(var output in tx.Outputs)
+                    {
+                        change += output.Value.ToDecimal(MoneyUnit.BTC);
+                    }
+                    builder.AddField(_("Move to unconfirmed"), Wallet.FormatAmount(change));
+                }
             }
 
             if (result)
