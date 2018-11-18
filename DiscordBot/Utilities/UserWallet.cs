@@ -28,12 +28,13 @@ namespace CCWallet.DiscordBot.Utilities
         public string ConfirmedBalance => FormatMoney(ConfirmedMoney);
         public string UnconfirmedBalance => FormatMoney(UnconfirmedMoney);
 
+        public Money PendingMoney { get; private set; } = Money.Zero;
+        public Money ConfirmedMoney { get; private set; } = Money.Zero;
+        public Money UnconfirmedMoney { get; private set; } = Money.Zero;
+
         private ExtKey ExtKey { get; }
         private Script ScriptPubKey { get; }
         private List<UnspentOutput.UnspentCoin> UnspentCoins { get; } = new List<UnspentOutput.UnspentCoin>();
-        private Money PendingMoney { get; set; } = Money.Zero;
-        private Money ConfirmedMoney { get; set; } = Money.Zero;
-        private Money UnconfirmedMoney { get; set; } = Money.Zero;
 
         private static Dictionary<(ulong, Network), HashSet<OutPoint>> UnconfirmedOutPoints { get; } = new Dictionary<(ulong, Network), HashSet<OutPoint>>();
 
