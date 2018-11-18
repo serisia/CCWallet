@@ -29,6 +29,8 @@ namespace CCWallet.DiscordBot.Translations
                 {"Confirming", new []{"승인중"} },
                 {"Unconfirmed", new []{"미승인"} },
                 {"Transaction", new[]{"트랜잭션"} },
+                {"Refund (can be used after confirmation)", new []{ "거스름돈(확인 후 사용 가능)" } },
+                {"Now available", new []{ "사용 가능한 잔액" } },
 
                 // Using: BotCommand.Balance
                 {"Your {0} balance.", new []{"당신의 {0} 잔액입니다."} },
