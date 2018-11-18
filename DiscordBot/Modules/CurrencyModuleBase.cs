@@ -262,14 +262,15 @@ namespace CCWallet.DiscordBot.Modules
                 builder.AddField(_("Fee"), Wallet.FormatMoney(fee), true);
                 builder.AddField(_("Transaction"), tx.GetHash());
                 if(result){
-                    decimal spentAmount = totalAmount + fee.ToDecimal(MoneyUnit.BTC);
-                    decimal change = - spentAmount;
+                    decimal change = - totalAmount;
                     foreach(var output in tx.Outputs)
                     {
-                        change += output.Value.ToDecimal(MoneyUnit.BTC);
+                        change += Wallet.Currency.ConvertMoneyUnitReverse(output.Value).ToDecimal(MoneyUnit.BTC);
                     }
-                    builder.AddField(_("Move to unconfirmed"), Wallet.FormatAmount(change), true);
-                    builder.AddField(_("Now available"), Wallet.FormatAmount(Wallet.ConfirmedMoney.ToDecimal(MoneyUnit.BTC) - spentAmount - change), true);
+                    builder.AddField(_("Now available"), Wallet.FormatAmount(
+                            Wallet.Currency.ConvertMoneyUnitReverse(Wallet.ConfirmedMoney).ToDecimal(MoneyUnit.BTC)
+                            - totalAmount - Wallet.Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) - change), true);
+                    builder.AddField(_("Refund (can be used after confirmation)"), Wallet.FormatAmount(change), true);
                 }
             }
 
