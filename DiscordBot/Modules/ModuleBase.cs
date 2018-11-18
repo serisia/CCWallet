@@ -47,7 +47,7 @@ namespace CCWallet.DiscordBot.Modules
             await Task.WhenAll(new List<Task>()
             {
                 Context.Message.AddReactionAsync(BotReaction.Success),
-                ReplyAsync($"{Context.User.Mention} {message}", false, embed),
+                ReplyAsync($"{Context.User.Mention} {message}", false, embed, new RequestOptions(){RetryMode = RetryMode.AlwaysRetry}),
             });
         }
 
@@ -56,7 +56,7 @@ namespace CCWallet.DiscordBot.Modules
             await Task.WhenAll(new List<Task>()
             {
                 Context.Message.AddReactionAsync(BotReaction.Failure),
-                ReplyAsync($"{Context.User.Mention} {message}", false, embed),
+                ReplyAsync($"{Context.User.Mention} {message}", false, embed, new RequestOptions(){RetryMode = RetryMode.AlwaysRetry}),
             });
         }
     }
