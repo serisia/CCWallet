@@ -29,6 +29,8 @@ namespace CCWallet.DiscordBot.Translations
                 {"Confirming", new []{"検証中"} },
                 {"Unconfirmed", new []{"未検証"} },
                 {"Transaction", new[]{"トランザクション"} },
+                {"Move to unconfirmed", new []{ "未検証移行額" } },
+                {"Now Available", new []{ "利用可能残高" } },
 
                 // Using: BotCommand.Balance
                 {"Your {0} balance.", new []{"あなたの{0}の残高です。"} },
