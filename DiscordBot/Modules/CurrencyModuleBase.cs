@@ -226,14 +226,14 @@ namespace CCWallet.DiscordBot.Modules
             var result = error == String.Empty;
 
             builder.AddField(_("Result"), result ? _("Success") : _("Failed"));
-            builder.AddField(_("From"), GetName(Context.User));
+            builder.AddField(_("From"), GetName(Context.User), true);
             if (outputs.Count > 1)
             {
-                builder.AddField(_("To"), outputs.Count + " " + _("users"));
+                builder.AddField(_("To"), outputs.Count + " " + _("users"), true);
             }
             else if (outputs.Count == 1)
             {
-                builder.AddField(_("To"), outputs.First().Key);
+                builder.AddField(_("To"), outputs.First().Key, true);
             }
 
             builder.AddField(_("Amount"), Wallet.FormatAmount(totalAmount), true);
