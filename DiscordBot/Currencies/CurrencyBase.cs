@@ -18,6 +18,7 @@ namespace CCWallet.DiscordBot.Currencies
         public string MessageMagic => throw new NotImplementedException();
         public int BIP44CoinType => throw new NotImplementedException();
         int ICurrency.TransactionConfirms { get; } = 6;
+        int ICurrency.CoinbaseConfirms { get; } = 101;
         int ICurrency.BaseAmountUnit { get; } = 100000000;
         decimal ICurrency.MinAmount { get; } = 0.000001m;
         decimal ICurrency.MaxAmount { get; } = 21000000m;

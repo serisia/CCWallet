@@ -69,7 +69,8 @@ namespace CCWallet.DiscordBot.Utilities
                 {
                     unconfirmed.Add(coin);
                 }
-                else if (coin.Confirms < Currency.TransactionConfirms)
+                else if (coin.Confirms < Currency.TransactionConfirms
+                    || (coin.IsCoinBase && coin.Confirms < Currency.CoinbaseConfirms))
                 {
                     pending.Add(coin);
                 }

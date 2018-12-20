@@ -12,6 +12,7 @@ namespace CCWallet.DiscordBot.Utilities
         string MessageMagic { get; }
         int BIP44CoinType { get; }
         int TransactionConfirms { get; }
+        int CoinbaseConfirms { get; }
         int BaseAmountUnit { get; }
         decimal MinAmount { get; }
         decimal MaxAmount { get; }

@@ -29,15 +29,21 @@ namespace CCWallet.DiscordBot.Utilities.Insight
         [DataMember(Name = "confirmations", EmitDefaultValue = false)]
         public UInt64 Confirmations { get; set; }
 
+        // optional
+        [DataMember(Name = "isCoinBase")]
+        public Boolean IsCoinBase { get; set; }
+
         public class UnspentCoin : Coin
         {
             public DateTimeOffset Time { get; }
             public int Confirms { get; }
+            public Boolean IsCoinBase { get; }
 
             public UnspentCoin(UnspentOutput output)
             {
                 Time = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(output.Timestamp));
                 Confirms = Convert.ToInt32(output.Confirmations);
+                IsCoinBase = output.IsCoinBase;
                 Outpoint = new OutPoint(uint256.Parse(output.TransactionId), Convert.ToUInt32(output.ValueOut));
                 TxOut = new TxOut(Money.FromUnit(output.Amount, MoneyUnit.BTC), new Script(Encoders.Hex.DecodeData(output.ScriptPubKey)));
             }

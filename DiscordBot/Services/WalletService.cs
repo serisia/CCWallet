@@ -21,11 +21,21 @@ namespace CCWallet.DiscordBot.Services
         public void AddCurrency(ICurrency currency, NetworkType network = NetworkType.Mainnet)
         {
             // load "CURRENCY_NETWORK_INSIGHT" environment value.
-            var endpoint = Configure.GetString($"{currency.CryptoCode}_{network}_INSIGHT".ToUpper()) ??
+            var baseuri = Configure.GetString($"{currency.CryptoCode}_{network}_INSIGHT".ToUpper()) ??
                            throw new ArgumentNullException();
+
+            var endpoints = new Dictionary<String, String>();
+            foreach(var name in InsightClient.EndpointNames)
+            {
+                var uri = Configure.GetString($"{currency.CryptoCode}_{network}_INSIGHT_{name}".ToUpper());
+                if(uri != null)
+                {
+                    endpoints.Add(name, uri);
+                }
+            }
             
             Currencies[currency.GetNetwork(network).Name] = currency;
-            InsightClients[currency.GetNetwork(network).Name] = new InsightClient(endpoint);
+            InsightClients[currency.GetNetwork(network).Name] = new InsightClient(baseuri, endpoints);
         }
 
         public ICurrency GetCurrency(Network network)

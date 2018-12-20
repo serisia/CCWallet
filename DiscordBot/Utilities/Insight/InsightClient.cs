@@ -10,17 +10,35 @@ namespace CCWallet.DiscordBot.Utilities.Insight
 {
     public class InsightClient
     {
-        public Uri BaseUri { get; }
+        // Endpoint name to use when reading from .env file
+        public static string[] EndpointNames { get; } = new string[]{
+            "UTXO", "SEND"
+        };
 
-        public InsightClient(string endpoint)
+        public Uri BaseUri { get; }
+        public Dictionary<String, String> Endpoints { get; }
+
+        public InsightClient(string baseuri, Dictionary<String, String> endpoints)
         {
-            BaseUri = new Uri(endpoint.TrimEnd('/'), UriKind.Absolute);
+            BaseUri = new Uri(baseuri.TrimEnd('/'), UriKind.Absolute);
+
+            Endpoints = new Dictionary<string, string>();
+            foreach(var val in endpoints)
+            {
+                var uri = val.Value;
+                if (!uri.StartsWith('/'))
+                {
+                    uri = $"/{uri}";
+                }
+                Endpoints.Add(val.Key, uri);
+            }
         }
 
         public async Task<IEnumerable<UnspentOutput.UnspentCoin>> GetUnspentCoinsAsync(BitcoinAddress address)
         {
             var builder = new UriBuilder(BaseUri);
-            builder.Path += $"/addr/{address}/utxo";
+            String uri = Endpoints.GetValueOrDefault("UTXO", "/addr/{0}/utxo"); ;
+            builder.Path += String.Format(uri, address);
             builder.Query = "noCache=1";
             
             return (await FetchAsync<IList<UnspentOutput>>(builder.Uri)).Select(u => u.ToUnspentCoin());
@@ -29,7 +47,7 @@ namespace CCWallet.DiscordBot.Utilities.Insight
         public async Task BroadcastAsync(Transaction tx)
         {
             var builder = new UriBuilder(BaseUri);
-            builder.Path += "/tx/send";
+            builder.Path += Endpoints.GetValueOrDefault("SEND", "/tx/send");
 
             await PostAsync(builder.Uri, Broadcast.ConvertFrom(tx));
         }
