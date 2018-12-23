@@ -78,7 +78,7 @@ namespace CCWallet.DiscordBot
             var wallet = ServiceProvider.GetRequiredService<Services.WalletService>();
 
             wallet.AddCurrency(Currencies.XPCoin.Instance);
-            wallet.AddCurrency(Currencies.XPChain.Instance, NBitcoin.NetworkType.Testnet);
+            wallet.AddCurrency(Currencies.XPChain.Instance);
         }
 
         private static async Task StartDiscord()

@@ -15,23 +15,14 @@ namespace CCWallet.DiscordBot.Currencies
         public static XPChain Instance { get; } = new XPChain();
 
         public override string CryptoCode { get; } = "XPC";
-        // TODO : SET CORRECT DATA
-        //string ICurrency.Name { get; } = "eXPerience Chain";
-        string ICurrency.Name { get; } = "testnet chain";
-        // TODO : SET CORRECT DATA
-//        string ICurrency.IconUrl { get; } = "https://raw.githubusercontent.com/xpc-wg/xpchain/0.17-xpc/src/qt/res/icons/xpchain.png";
-        string ICurrency.IconUrl { get; } = "https://user-images.githubusercontent.com/4088274/48312879-a0f71e80-e5f8-11e8-9a96-49022ade0ef1.png";
+        string ICurrency.Name { get; } = "eXPerience Chain";
+        string ICurrency.IconUrl { get; } = "https://user-images.githubusercontent.com/4088274/50381599-5c1dd780-06ce-11e9-844e-78fda9a297ac.png";
         string ICurrency.MessageMagic { get; } = "XPChain Signed Message:\n";
-        // TODO : SET CORRECT DATA
-        //int ICurrency.BIP44CoinType { get; } = 0x70000001; // Mainet is undefined
-        int ICurrency.BIP44CoinType { get; } = 0x00000001; // Testnet
+        int ICurrency.BIP44CoinType { get; } = 0x0000018e; // 398 https://github.com/satoshilabs/slips/blob/master/slip-0044.md
         int ICurrency.TransactionConfirms { get; } = 6;
         int ICurrency.BaseAmountUnit { get; } = 10000;
-        // TODO : SET CORRECT DATA
         decimal ICurrency.MinAmount { get; } = 0.01m;
-        // TODO : SET CORRECT DATA
         decimal ICurrency.MaxAmount { get; } = 210000000000m;
-        // TODO : SET CORRECT DATA
         decimal ICurrency.MinRainAmount { get; } = 100m;
         Money ICurrency.MinTxFee { get; } = Money.Coins(0.1m);
         int ICurrency.MaxRainUsers { get; } = int.MaxValue;
@@ -64,14 +55,12 @@ namespace CCWallet.DiscordBot.Currencies
                 .AddAlias("xpchain-mainnet")
                 .AddDNSSeeds(new[]
                 {
-                    // TODO : SET CORRECT DATA
                     new DNSSeedData("seed1","seed1.xpchain.io"),
                     new DNSSeedData("seed2","seed2.xpchain.io"),
                     new DNSSeedData("seed3","seed3.xpchain.io"),
                 })
                 .AddSeeds(new NetworkAddress[0])
-                // TODO : SET CORRECT DATA
-                .SetGenesis("01000000000000000000000000000000000000000000000000000000000000000000000001c0ee41fb6b792f9d4ad6a295812747aebc30972c326cfed6b9a62f27c283ccb808bd57ffff0f1ee9fb03000101000000b508bd57010000000000000000000000000000000000000000000000000000000000000000ffffffff1304ffff001d020f270a58502047656e65736973ffffffff010000000000000000000000000000");
+                .SetGenesis("04000000000000000000000000000000000000000000000000000000000000000000000039970109c415a3a32349ec98b9dc3d2a81c17af16f2e891cd52d202c6610a6dabc23cf5bffff001d119b7dd80101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4a04ffff001d01044258706320646576656c6f70657273206172652050726574747920437574652e204f6620636f757273652069742069732061206a6f6b652e20224e6f7722207965742effffffff0120a1070000000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000");
         }
 
         protected override NetworkBuilder CreateTestnet()

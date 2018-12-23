@@ -8,7 +8,7 @@ namespace CCWallet.DiscordBot.Modules
     [Name("xpchain")]
     public class XPChainModule : CurrencyModuleBase
     {
-        protected override Network Network => Currencies.XPChain.Instance.Testnet;
+        protected override Network Network => Currencies.XPChain.Instance.Mainnet;
         
         public override async Task CommandHelpAsync(string command = null) => await base.CommandHelpAsync(command);
         public override async Task CommandBalanceAsync() => await base.CommandBalanceAsync();
