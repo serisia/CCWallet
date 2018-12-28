@@ -261,6 +261,7 @@ namespace CCWallet.DiscordBot.Modules
                 Money fee = Wallet.GetFee(tx);
                 builder.AddField(_("Fee"), Wallet.FormatMoney(fee), true);
                 builder.AddField(_("Transaction"), tx.GetHash());
+/*
                 if(result){
                     decimal change = - totalAmount;
                     foreach(var output in tx.Outputs)
@@ -272,6 +273,7 @@ namespace CCWallet.DiscordBot.Modules
                             - totalAmount - Wallet.Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) - change), true);
                     builder.AddField(_("Refund (can be used after confirmation)"), Wallet.FormatAmount(change), true);
                 }
+*/
             }
 
             if (result)
