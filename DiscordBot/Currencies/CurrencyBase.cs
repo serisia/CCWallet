@@ -70,7 +70,7 @@ namespace CCWallet.DiscordBot.Currencies
             var tx = builder.BuildTransaction(true);
             var bytes = tx.GetVirtualSize();
 
-            return ((ICurrency)this).ConvertMoneyUnit(((ICurrency)this).MinTxFee) * bytes / 1000 + 1; // +1 for calculation error
+            return ((ICurrency)this).ConvertMoneyUnit(((ICurrency)this).MinTxFee) * bytes / 1000 + 20; // +20 for proiority budget
         }
 
         public virtual TransactionBuilder GeTransactionBuilder()
