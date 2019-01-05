@@ -33,11 +33,13 @@ namespace CCWallet.DiscordBot.Utilities
         public Money ConfirmedMoney { get; private set; } = Money.Zero;
         public Money UnconfirmedMoney { get; private set; } = Money.Zero;
 
-        private ExtKey ExtKey { get; }
+        private  ExtKey ExtKey { get; }
         private Script ScriptPubKey { get; }
         private List<UnspentOutput.UnspentCoin> UnspentCoins { get; } = new List<UnspentOutput.UnspentCoin>();
 
         private static Dictionary<(ulong, Network), HashSet<OutPoint>> UnconfirmedOutPoints { get; } = new Dictionary<(ulong, Network), HashSet<OutPoint>>();
+
+        public const decimal AllAmount = -1m;
 
         public UserWallet(WalletService wallet, Network network, IUser user, ExtKey key)
         {
@@ -98,8 +100,15 @@ namespace CCWallet.DiscordBot.Utilities
             var totalAmount = decimal.Zero;
             foreach (var output in outputs)
             {
-                totalAmount += output.Value;
-                builder.Send(output.Key, Currency.ConvertMoneyUnit(ConvertMoney(output.Value)));
+                decimal tmpVal = decimal.Zero;
+                if(output.Value == UserWallet.AllAmount){ // all
+                    tmpVal = Currency.ConvertMoneyUnitReverse(ConfirmedMoney).ToDecimal(MoneyUnit.BTC) - feeMargin;
+                }
+                else{
+                    tmpVal = output.Value;
+                }
+                totalAmount += tmpVal;
+                builder.Send(output.Key, Currency.ConvertMoneyUnit(ConvertMoney(tmpVal)));
             }
 
             var coins = UnspentCoinSelector(Currency.ConvertMoneyUnit(ConvertMoney(totalAmount + feeMargin)));

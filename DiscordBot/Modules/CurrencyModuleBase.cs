@@ -94,8 +94,25 @@ namespace CCWallet.DiscordBot.Modules
         {
             await Context.Channel.TriggerTypingAsync();
             await Wallet.UpdateBalanceAsync();
-            var outputs = new Dictionary<string, decimal>() { { address, amount } };
+            var outputs = new Dictionary<string, decimal>() { { address, amount < 0 ? 0 : amount } };
             TryTransfer(outputs, out var tx, out var error);
+
+            await ReplyTransferAsync(new EmbedBuilder()
+            {
+                Title = _("Withdraw"),
+            }, tx, outputs, amount, error);
+        }
+
+        [Command(BotCommand.WithdrawAll)]
+        [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        public virtual async Task CommandWithdrawAllAsync(string address)
+        {
+            await Context.Channel.TriggerTypingAsync();
+            await Wallet.UpdateBalanceAsync();
+            var outputs = new Dictionary<string, decimal>() { { address, UserWallet.AllAmount } };
+            TryTransfer(outputs, out var tx, out var error);
+            var amount = tx == null ? decimal.Zero : Wallet.Currency.ConvertMoneyUnitReverse(tx.TotalOut).ToDecimal(MoneyUnit.BTC);
 
             await ReplyTransferAsync(new EmbedBuilder()
             {
@@ -111,7 +128,7 @@ namespace CCWallet.DiscordBot.Modules
             await Context.Channel.TriggerTypingAsync();
             await Wallet.UpdateBalanceAsync();
 
-            var outputs = new Dictionary<IDestination, decimal>() { { GetAddress(user), amount } };
+            var outputs = new Dictionary<IDestination, decimal>() { { GetAddress(user), amount < 0 ? 0 : amount } };
             TryTransfer(outputs, out var tx, out var error);
 
             await ReplyTransferAsync(new EmbedBuilder()
