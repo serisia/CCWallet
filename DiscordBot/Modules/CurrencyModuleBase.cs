@@ -202,6 +202,71 @@ namespace CCWallet.DiscordBot.Modules
             }, tx, displayOutputs, amount, error);
         }
 
+        [Command(BotCommand.Splash)]
+        [RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        public virtual async Task CommandSplashAsync(IRole role, decimal amount, params string[] comment)
+        {
+            Transaction tx = null;
+            string error = null;
+            var outputs = new Dictionary<IDestination, decimal>();
+            var displayOutputs = new Dictionary<string, decimal>();
+
+            try
+            {
+                Wallet.ValidateAmount(amount, true);
+                if (Wallet.Currency.MinRainAmount > amount)
+                {
+                    throw new ArgumentOutOfRangeException(null, "Lower than the minimum splash amount.");
+                }
+
+                await Context.Channel.TriggerTypingAsync();
+                IEnumerable<IGuildUser> users = await Context.Guild.GetUsersAsync();
+                await Wallet.UpdateBalanceAsync();
+                var targets = new List<IGuildUser>();
+
+                foreach (var u in users)
+                {
+                    if (u.IsBot || u.Status != Discord.UserStatus.Online || u.Id == Wallet.User.Id || !u.RoleIds.Contains(role.Id))
+                    {
+                        // exclude if the user is bot, or not online, or sender.
+                        continue;
+                    }
+                    targets.Add(u);
+                }
+
+                if (targets.Count > 0)
+                {
+                    var rand = new Random();
+                    while (targets.Count > Wallet.Currency.MaxRainUsers)
+                    {
+                        targets.RemoveAt(rand.Next() % targets.Count);
+                    }
+
+                    var amountPerUser = Decimal.Floor(amount / targets.Count * Wallet.Currency.BaseAmountUnit) / Wallet.Currency.BaseAmountUnit;
+                    foreach (var user in targets)
+                    {
+                        outputs.Add(GetAddress(user), amountPerUser);
+                        displayOutputs.Add(GetName(user), amountPerUser);
+                    }
+                    TryTransfer(outputs, out tx, out error);
+                }
+                else
+                {
+                    error = _("There are no users.");
+                }
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                error = _("Invalid amount. {0}", _(e.Message));
+            }
+
+            await ReplyTransferAsync(new EmbedBuilder()
+            {
+                Title = _("Splash"),
+            }, tx, displayOutputs, amount, error);
+        }
+
         [Command(BotCommand.SignMessage)]
         [RequireContext(ContextType.DM)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]

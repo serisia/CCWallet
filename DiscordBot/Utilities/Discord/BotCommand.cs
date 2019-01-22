@@ -9,6 +9,7 @@
         public const string Withdraw    = "withdraw";
         public const string WithdrawAll = "withdraw all";
         public const string Rain        = "rain";
+        public const string Splash      = "splash";
         public const string SignMessage = "message sign";
     }
 }
