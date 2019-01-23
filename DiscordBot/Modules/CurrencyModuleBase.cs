@@ -375,7 +375,10 @@ namespace CCWallet.DiscordBot.Modules
                 try
                 {
                     await SendSuccessDMAsync(Context.User, _("Sent {0}.", Wallet.Currency.Name), CreateEmbed(builder));
-                    await ReplySuccessAsync(_("Sent {0}.", Wallet.Currency.Name), CreateEmbed(shortEmbBuilder));
+                    if(Context.Guild != null)
+                    {
+                        await ReplySuccessAsync(_("Sent {0}.", Wallet.Currency.Name), CreateEmbed(shortEmbBuilder));
+                    }
                 }
                 catch (Exception)
                 {
@@ -397,7 +400,10 @@ namespace CCWallet.DiscordBot.Modules
                 try
                 {
                     await SendFailureDMAsync(Context.User, _("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(builder));
-                    await ReplyFailureAsync(_("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(shortEmbBuilder));
+                    if (Context.Guild != null)
+                    {
+                        await ReplyFailureAsync(_("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(shortEmbBuilder));
+                    }
                 }
                 catch (Exception)
                 {
