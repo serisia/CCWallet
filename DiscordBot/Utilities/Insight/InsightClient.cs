@@ -37,7 +37,7 @@ namespace CCWallet.DiscordBot.Utilities.Insight
         public async Task<IEnumerable<UnspentOutput.UnspentCoin>> GetUnspentCoinsAsync(BitcoinAddress address)
         {
             var builder = new UriBuilder(BaseUri);
-            String uri = Endpoints.GetValueOrDefault("UTXO", "/addr/{0}/utxo"); ;
+            String uri = Endpoints.GetValueOrDefault("UTXO", "/addr/{0}/utxo");
             builder.Path += String.Format(uri, address);
             builder.Query = "noCache=1";
             
