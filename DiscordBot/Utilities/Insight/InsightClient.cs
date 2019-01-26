@@ -49,19 +49,21 @@ namespace CCWallet.DiscordBot.Utilities.Insight
             var builder = new UriBuilder(BaseUri);
             builder.Path += Endpoints.GetValueOrDefault("SEND", "/tx/send");
 
-            await PostAsync(builder.Uri, Broadcast.ConvertFrom(tx));
+            WebResponse wr = await PostAsync(builder.Uri, Broadcast.ConvertFrom(tx));
+            wr.Close();
         }
 
         private async Task<T> FetchAsync<T>(Uri uri) where T : class
         {
             var request = WebRequest.Create(uri);
-            var response = await request.GetResponseAsync();
-
-            using (var stream = response.GetResponseStream())
+            using (var response = await request.GetResponseAsync())
             {
-                var serializer = new DataContractJsonSerializer(typeof(T));
+                using (var stream = response.GetResponseStream())
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(T));
 
-                return serializer.ReadObject(stream) as T;
+                    return serializer.ReadObject(stream) as T;
+                }
             }
         }
 
