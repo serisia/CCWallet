@@ -59,5 +59,39 @@ namespace CCWallet.DiscordBot.Modules
                 ReplyAsync($"{Context.User.Mention} {message}", false, embed),
             });
         }
+
+        protected override async Task<IUserMessage> ReplyAsync(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null)
+        {
+            Exception last = null;
+            for(int i = 0; i < 3; i++){
+                try{
+                    return await base.ReplyAsync(message, isTTS, embed, options);
+                }
+                catch(Exception e)
+                {
+                    last = e;
+                    if(i == 2){ throw; }
+                }
+            }
+            throw last; // Unexpected throw
+        }
+
+        protected virtual async Task SendSuccessDMAsync(IUser sendto, string message, Embed embed = null)
+        {
+            await Task.WhenAll(new List<Task>()
+            {
+                Context.Message.AddReactionAsync(BotReaction.Success),
+                sendto.SendMessageAsync($"{message}", false, embed),
+            });
+        }
+
+        protected virtual async Task SendFailureDMAsync(IUser sendto, string message, Embed embed = null)
+        {
+            await Task.WhenAll(new List<Task>()
+            {
+                Context.Message.AddReactionAsync(BotReaction.Failure),
+                sendto.SendMessageAsync($"{message}", false, embed),
+            });
+        }
     }
 }

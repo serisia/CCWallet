@@ -59,7 +59,8 @@ namespace CCWallet.DiscordBot
 
             Task.WaitAll(new[]
             {
-                command.AddCommandService("!xp").AddModuleAsync<Modules.XPCoinModule>(),
+//                command.AddCommandService("!xpcoin").AddModuleAsync<Modules.XPCoinModule>(),
+                command.AddCommandService("!xpc").AddModuleAsync<Modules.XPChainModule>(),
                 command.AddCommandService("!ccwallet").AddModuleAsync<Modules.CCWalletModule>(),
             });
         }
@@ -77,6 +78,7 @@ namespace CCWallet.DiscordBot
             var wallet = ServiceProvider.GetRequiredService<Services.WalletService>();
 
             wallet.AddCurrency(Currencies.XPCoin.Instance);
+            wallet.AddCurrency(Currencies.XPChain.Instance);
         }
 
         private static async Task StartDiscord()

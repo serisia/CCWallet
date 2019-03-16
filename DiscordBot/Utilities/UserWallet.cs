@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NBitcoin.Crypto;
 using NBitcoin.Protocol;
+using CCWallet.DiscordBot.Currencies;
 
 namespace CCWallet.DiscordBot.Utilities
 {
@@ -28,14 +29,17 @@ namespace CCWallet.DiscordBot.Utilities
         public string ConfirmedBalance => FormatMoney(ConfirmedMoney);
         public string UnconfirmedBalance => FormatMoney(UnconfirmedMoney);
 
-        private ExtKey ExtKey { get; }
+        public Money PendingMoney { get; private set; } = Money.Zero;
+        public Money ConfirmedMoney { get; private set; } = Money.Zero;
+        public Money UnconfirmedMoney { get; private set; } = Money.Zero;
+
+        private  ExtKey ExtKey { get; }
         private Script ScriptPubKey { get; }
         private List<UnspentOutput.UnspentCoin> UnspentCoins { get; } = new List<UnspentOutput.UnspentCoin>();
-        private Money PendingMoney { get; set; } = Money.Zero;
-        private Money ConfirmedMoney { get; set; } = Money.Zero;
-        private Money UnconfirmedMoney { get; set; } = Money.Zero;
 
         private static Dictionary<(ulong, Network), HashSet<OutPoint>> UnconfirmedOutPoints { get; } = new Dictionary<(ulong, Network), HashSet<OutPoint>>();
+
+        public const decimal AllAmount = -1m;
 
         public UserWallet(WalletService wallet, Network network, IUser user, ExtKey key)
         {
@@ -46,6 +50,10 @@ namespace CCWallet.DiscordBot.Utilities
             User = user;
             ExtKey = key;
             ScriptPubKey = GetExtKey().ScriptPubKey;
+            if (Currency.SupportSegwit)
+            {
+                ScriptPubKey = ScriptPubKey.WitHash.ScriptPubKey;
+            }
         }
 
         public async Task UpdateBalanceAsync()
@@ -58,11 +66,13 @@ namespace CCWallet.DiscordBot.Utilities
             SetConfirmedOutPoints(result.Select(c => c.Outpoint));
             foreach (var coin in result)
             {
+                coin.Amount = Currency.ConvertMoneyUnit(coin.Amount); // Convert BaseAmountUnit
                 if (HasUnconfirmedOutPoint(coin) || coin.Confirms == 0)
                 {
                     unconfirmed.Add(coin);
                 }
-                else if (coin.Confirms < Currency.TransactionConfirms)
+                else if (coin.Confirms < Currency.TransactionConfirms
+                    || (coin.IsCoinBase && coin.Confirms < Currency.CoinbaseConfirms))
                 {
                     pending.Add(coin);
                 }
@@ -80,7 +90,7 @@ namespace CCWallet.DiscordBot.Utilities
             UnconfirmedMoney = MoneyExtensions.Sum(unconfirmed.Select(c => c.Amount));
         }
 
-        public Transaction BuildTransaction(Dictionary<IDestination, decimal> outputs)
+        public Transaction BuildTransaction(Dictionary<IDestination, decimal> outputs, decimal feeMargin = 0m)
         {
             var builder = Currency.GeTransactionBuilder();
             builder.SetChange(Address)
@@ -90,14 +100,34 @@ namespace CCWallet.DiscordBot.Utilities
             var totalAmount = decimal.Zero;
             foreach (var output in outputs)
             {
-                totalAmount += output.Value;
-                builder.Send(output.Key, ConvertMoney(output.Value));
+                decimal tmpVal = decimal.Zero;
+                if(output.Value == UserWallet.AllAmount){ // all
+                    tmpVal = Currency.ConvertMoneyUnitReverse(ConfirmedMoney).ToDecimal(MoneyUnit.BTC) - feeMargin;
+                }
+                else{
+                    tmpVal = output.Value;
+                }
+                totalAmount += tmpVal;
+                builder.Send(output.Key, Currency.ConvertMoneyUnit(ConvertMoney(tmpVal)));
             }
 
-            var coins = UnspentCoinSelector(ConvertMoney(totalAmount));
-            var tx = builder
-                .AddCoins(coins)
-                .SendFees(Currency.CalculateFee(builder, coins))
+            var coins = UnspentCoinSelector(Currency.ConvertMoneyUnit(ConvertMoney(totalAmount + feeMargin)));
+            builder.AddCoins(coins);
+            
+            var fee = Currency.CalculateFee(builder, coins);
+            var selectedAmount = 0m;
+            foreach (var c in coins)
+            {
+                selectedAmount += Currency.ConvertMoneyUnitReverse(c.Amount).ToDecimal(MoneyUnit.BTC);
+            }
+            
+            if (totalAmount + Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) > selectedAmount
+                && feeMargin != Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC)) // fee changed
+            {
+                return BuildTransaction(outputs, Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC));
+            }
+            
+            var tx = builder.SendFees(fee)
                 .BuildTransaction(true);
 
             var result = Currency.VerifyTransaction(tx);

@@ -94,8 +94,25 @@ namespace CCWallet.DiscordBot.Modules
         {
             await Context.Channel.TriggerTypingAsync();
             await Wallet.UpdateBalanceAsync();
-            var outputs = new Dictionary<string, decimal>() { { address, amount } };
+            var outputs = new Dictionary<string, decimal>() { { address, amount < 0 ? 0 : amount } };
             TryTransfer(outputs, out var tx, out var error);
+
+            await ReplyTransferAsync(new EmbedBuilder()
+            {
+                Title = _("Withdraw"),
+            }, tx, outputs, amount, error);
+        }
+
+        [Command(BotCommand.WithdrawAll)]
+        [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        public virtual async Task CommandWithdrawAllAsync(string address)
+        {
+            await Context.Channel.TriggerTypingAsync();
+            await Wallet.UpdateBalanceAsync();
+            var outputs = new Dictionary<string, decimal>() { { address, UserWallet.AllAmount } };
+            TryTransfer(outputs, out var tx, out var error);
+            var amount = tx == null ? decimal.Zero : Wallet.Currency.ConvertMoneyUnitReverse(tx.TotalOut).ToDecimal(MoneyUnit.BTC);
 
             await ReplyTransferAsync(new EmbedBuilder()
             {
@@ -111,7 +128,7 @@ namespace CCWallet.DiscordBot.Modules
             await Context.Channel.TriggerTypingAsync();
             await Wallet.UpdateBalanceAsync();
 
-            var outputs = new Dictionary<IDestination, decimal>() { { GetAddress(user), amount } };
+            var outputs = new Dictionary<IDestination, decimal>() { { GetAddress(user), amount < 0 ? 0 : amount } };
             TryTransfer(outputs, out var tx, out var error);
 
             await ReplyTransferAsync(new EmbedBuilder()
@@ -185,6 +202,71 @@ namespace CCWallet.DiscordBot.Modules
             }, tx, displayOutputs, amount, error);
         }
 
+        [Command(BotCommand.Splash)]
+        [RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        public virtual async Task CommandSplashAsync(IRole role, decimal amount, params string[] comment)
+        {
+            Transaction tx = null;
+            string error = null;
+            var outputs = new Dictionary<IDestination, decimal>();
+            var displayOutputs = new Dictionary<string, decimal>();
+
+            try
+            {
+                Wallet.ValidateAmount(amount, true);
+                if (Wallet.Currency.MinRainAmount > amount)
+                {
+                    throw new ArgumentOutOfRangeException(null, "Lower than the minimum splash amount.");
+                }
+
+                await Context.Channel.TriggerTypingAsync();
+                IEnumerable<IGuildUser> users = await Context.Guild.GetUsersAsync();
+                await Wallet.UpdateBalanceAsync();
+                var targets = new List<IGuildUser>();
+
+                foreach (var u in users)
+                {
+                    if (u.IsBot || u.Status != Discord.UserStatus.Online || u.Id == Wallet.User.Id || !u.RoleIds.Contains(role.Id))
+                    {
+                        // exclude if the user is bot, or not online, or sender.
+                        continue;
+                    }
+                    targets.Add(u);
+                }
+
+                if (targets.Count > 0)
+                {
+                    var rand = new Random();
+                    while (targets.Count > Wallet.Currency.MaxRainUsers)
+                    {
+                        targets.RemoveAt(rand.Next() % targets.Count);
+                    }
+
+                    var amountPerUser = Decimal.Floor(amount / targets.Count * Wallet.Currency.BaseAmountUnit) / Wallet.Currency.BaseAmountUnit;
+                    foreach (var user in targets)
+                    {
+                        outputs.Add(GetAddress(user), amountPerUser);
+                        displayOutputs.Add(GetName(user), amountPerUser);
+                    }
+                    TryTransfer(outputs, out tx, out error);
+                }
+                else
+                {
+                    error = _("There are no users.");
+                }
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                error = _("Invalid amount. {0}", _(e.Message));
+            }
+
+            await ReplyTransferAsync(new EmbedBuilder()
+            {
+                Title = _("Splash"),
+            }, tx, displayOutputs, amount, error);
+        }
+
         [Command(BotCommand.SignMessage)]
         [RequireContext(ContextType.DM)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
@@ -224,16 +306,17 @@ namespace CCWallet.DiscordBot.Modules
         protected virtual async Task ReplyTransferAsync(EmbedBuilder builder, Transaction tx, Dictionary<string, decimal> outputs, decimal totalAmount, string error)
         {
             var result = error == String.Empty;
+            var shortEmbFields = new List<String>() { _("To"), _("Amount"), _("Amount / User") };
 
             builder.AddField(_("Result"), result ? _("Success") : _("Failed"));
-            builder.AddField(_("From"), GetName(Context.User));
+            builder.AddField(_("From"), GetName(Context.User), true);
             if (outputs.Count > 1)
             {
-                builder.AddField(_("To"), outputs.Count + " " + _("users"));
+                builder.AddField(_("To"), outputs.Count + " " + _("users"), true);
             }
             else if (outputs.Count == 1)
             {
-                builder.AddField(_("To"), outputs.First().Key);
+                builder.AddField(_("To"), outputs.First().Key, true);
             }
 
             builder.AddField(_("Amount"), Wallet.FormatAmount(totalAmount), true);
@@ -253,14 +336,31 @@ namespace CCWallet.DiscordBot.Modules
                 if (flag)
                 {
                     builder.AddField(_("Amount / User"), Wallet.FormatAmount(checkAmount), true);
+                    shortEmbFields.Remove(_("Amount"));
                 }
             }
 
             if (tx != null)
             {
-                builder.AddField(_("Fee"), Wallet.FormatMoney(Wallet.GetFee(tx)), true);
+                Money fee = Wallet.GetFee(tx);
+                builder.AddField(_("Fee"), Wallet.FormatMoney(fee), true);
                 builder.AddField(_("Transaction"), tx.GetHash());
+
+                if(result){
+                    decimal change = - totalAmount;
+                    foreach(var output in tx.Outputs)
+                    {
+                        change += Wallet.Currency.ConvertMoneyUnitReverse(output.Value).ToDecimal(MoneyUnit.BTC);
+                    }
+                    builder.AddField(_("Now available"), Wallet.FormatAmount(
+                            Wallet.Currency.ConvertMoneyUnitReverse(Wallet.ConfirmedMoney).ToDecimal(MoneyUnit.BTC)
+                            - totalAmount - Wallet.Currency.ConvertMoneyUnitReverse(fee).ToDecimal(MoneyUnit.BTC) - change), true);
+                    builder.AddField(_("Refund (can be used after confirmation)"), Wallet.FormatAmount(change), true);
+                }
             }
+
+            var shortEmbBuilder = new EmbedBuilder();
+            shortEmbBuilder.Fields.AddRange(builder.Fields.Where(f => shortEmbFields.Contains(f.Name)));
 
             if (result)
             {
@@ -270,8 +370,22 @@ namespace CCWallet.DiscordBot.Modules
                     _("Sent {0}.", Wallet.Currency.Name),
                     _("It may take some time to receive an approved message from the network; you can also check the status with the Blockchain Explorer."),
                 });
+                shortEmbBuilder.Color = builder.Color;
 
-                await ReplySuccessAsync(_("Sent {0}.", Wallet.Currency.Name), CreateEmbed(builder));
+                try
+                {
+                    await SendSuccessDMAsync(Context.User, _("Sent {0}.", Wallet.Currency.Name), CreateEmbed(builder));
+                    if(Context.Guild != null)
+                    {
+                        await ReplySuccessAsync(_("Sent {0}.", Wallet.Currency.Name), CreateEmbed(shortEmbBuilder));
+                    }
+                }
+                catch (Exception)
+                {
+                    builder.Fields.Remove(builder.Fields.Find(f => f.Name == _("Now available")));
+                    builder.Fields.Remove(builder.Fields.Find(f => f.Name == _("Refund (can be used after confirmation)")));
+                    await ReplySuccessAsync(_("Sent {0}.", Wallet.Currency.Name), CreateEmbed(builder));
+                }
             }
             else
             {
@@ -281,8 +395,20 @@ namespace CCWallet.DiscordBot.Modules
                     _("Failed to send {0}.", Wallet.Currency.Name),
                     error,
                 });
+                shortEmbBuilder.Color = builder.Color;
 
-                await ReplyFailureAsync(_("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(builder));
+                try
+                {
+                    await SendFailureDMAsync(Context.User, _("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(builder));
+                    if (Context.Guild != null)
+                    {
+                        await ReplyFailureAsync(_("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(shortEmbBuilder));
+                    }
+                }
+                catch (Exception)
+                {
+                    await ReplyFailureAsync(_("Failed to send {0}.", Wallet.Currency.Name), CreateEmbed(builder));
+                }
             }
         }
 

@@ -152,18 +152,23 @@ namespace CCWallet.DiscordBot.Services
                                 break;
                         }
 
-
-                        if (result.Error == CommandError.Exception)
-                        {
-                            await command.Context.Message.AddReactionAsync(BotReaction.Error);
-
-                        }
-                        else if (!result.IsSuccess)
-                        {
-                            await command.Context.Message.AddReactionAsync(BotReaction.Unknown);
-                        }
-
                         PushLog(log);
+
+                        try{
+                            if (result.Error == CommandError.Exception)
+                            {
+                                await command.Context.Message.AddReactionAsync(BotReaction.Error);
+                            }
+                            else if (!result.IsSuccess)
+                            {
+                                await command.Context.Message.AddReactionAsync(BotReaction.Unknown);
+                            }
+                        }
+                        catch(Exception e){
+                            Console.WriteLine($"Exception : {e.Message}");
+                            Console.WriteLine($"Exception : {e.StackTrace}");
+                        }
+
                     }
                 }
             }

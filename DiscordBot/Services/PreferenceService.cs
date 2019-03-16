@@ -109,22 +109,26 @@ namespace CCWallet.DiscordBot.Services
                     throw new ArgumentException();
             }
 
-            PostAsync(endpoint.Uri, preference).Wait();
+            Task<WebResponse> t = PostAsync(endpoint.Uri, preference);
+            t.Wait();
+            t.Result.Close();
         }
 
         private async Task<T> FetchAsync<T>(Uri uri) where T : class
         {
             var request = WebRequest.Create(uri);
-            var response = await request.GetResponseAsync();
 
-            using (var stream = response.GetResponseStream())
+            using (var response = await request.GetResponseAsync())
             {
-                var serializer = new DataContractJsonSerializer(typeof(T), new DataContractJsonSerializerSettings()
+                using (var stream = response.GetResponseStream())
                 {
-                    UseSimpleDictionaryFormat = true,
-                });
+                    var serializer = new DataContractJsonSerializer(typeof(T), new DataContractJsonSerializerSettings()
+                    {
+                        UseSimpleDictionaryFormat = true,
+                    });
 
-                return serializer.ReadObject(stream) as T;
+                    return serializer.ReadObject(stream) as T;
+                }
             }
         }
 
@@ -142,7 +146,7 @@ namespace CCWallet.DiscordBot.Services
                 }).WriteObject(stream, param);
             }
 
-            return await request.GetResponseAsync();
+            return await request.GetResponseAsync() ;
         }
     }
 }

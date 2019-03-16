@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace CCWallet.DiscordBot.Modules
 {
-    [Name("xp")]
-    public class XPCoinModule : CurrencyModuleBase
+    [Name("xpchain")]
+    public class XPChainModule : CurrencyModuleBase
     {
-        protected override Network Network => Currencies.XPCoin.Instance.Mainnet;
+        protected override Network Network => Currencies.XPChain.Instance.Mainnet;
         
         public override async Task CommandHelpAsync(string command = null) => await base.CommandHelpAsync(command);
         public override async Task CommandBalanceAsync() => await base.CommandBalanceAsync();
@@ -17,6 +17,8 @@ namespace CCWallet.DiscordBot.Modules
         public override async Task CommandWithdrawAsync(string address, decimal amount) => await base.CommandWithdrawAsync(address, amount);
         public override async Task CommandWithdrawAllAsync(string address) => await base.CommandWithdrawAllAsync(address);
         public override async Task CommandRainAsync(decimal amount, params string[] comment) => await base.CommandRainAsync(amount, comment);
-        public override async Task CommandSignMessageAsync([Remainder] string message) => await base.CommandSignMessageAsync(message);
+        public override async Task CommandSplashAsync(IRole role, decimal amount, params string[] comment) => await base.CommandSplashAsync(role, amount, comment);
+        //Bech32 Address is not supported for sign message in Core wallet
+        //public override async Task CommandSignMessageAsync([Remainder] string message) => await base.CommandSignMessageAsync(message);
     }
 }
