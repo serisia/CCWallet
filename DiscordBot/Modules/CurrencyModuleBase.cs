@@ -137,6 +137,33 @@ namespace CCWallet.DiscordBot.Modules
             }, tx, new Dictionary<string, decimal>() { { GetName(user), amount } }, amount, error);
         }
 
+        [Command(BotCommand.Multip)]
+        [RequireContext(ContextType.Guild | ContextType.Group)]
+        [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
+        public virtual async Task CommandMultipAsync(decimal amount, params IUser[] users)
+        {
+            await Context.Channel.TriggerTypingAsync();
+            await Wallet.UpdateBalanceAsync();
+
+            var outputs = new Dictionary<IDestination, decimal>();
+            var displayOutputs = new Dictionary<string, decimal>();
+            var sumAmount = 0m;
+            foreach (var user in users){
+                if (!outputs.ContainsKey(GetAddress(user)))
+                {
+                    outputs.Add(GetAddress(user), amount < 0 ? 0 : amount);
+                    displayOutputs.Add(GetName(user), amount < 0 ? 0 : amount);
+                    sumAmount += amount;
+                }
+            }
+            TryTransfer(outputs, out var tx, out var error);
+
+            await ReplyTransferAsync(new EmbedBuilder()
+            {
+                Title = _("Multip"),
+            }, tx, displayOutputs, sumAmount, error);
+        }
+
         [Command(BotCommand.Rain)]
         [RequireContext(ContextType.Guild | ContextType.Group)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
