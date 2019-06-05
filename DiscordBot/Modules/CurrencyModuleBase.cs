@@ -90,7 +90,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Withdraw)]
         [RequireContext(ContextType.DM | ContextType.Group | ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
-        public virtual async Task CommandWithdrawAsync(string address, decimal amount)
+        public virtual async Task CommandWithdrawAsync(decimal amount, string address)
         {
             await Context.Channel.TriggerTypingAsync();
             await Wallet.UpdateBalanceAsync();
@@ -123,7 +123,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Tip)]
         [RequireContext(ContextType.Guild | ContextType.Group)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
-        public virtual async Task CommandTipAsync(IUser user, decimal amount, params string[] comment)
+        public virtual async Task CommandTipAsync(decimal amount, IUser user, params string[] comment)
         {
             await Context.Channel.TriggerTypingAsync();
             await Wallet.UpdateBalanceAsync();
@@ -232,7 +232,7 @@ namespace CCWallet.DiscordBot.Modules
         [Command(BotCommand.Splash)]
         [RequireContext(ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.SendMessages | ChannelPermission.AddReactions | ChannelPermission.EmbedLinks)]
-        public virtual async Task CommandSplashAsync(IRole role, decimal amount, params string[] comment)
+        public virtual async Task CommandSplashAsync(decimal amount, IRole role, params string[] comment)
         {
             Transaction tx = null;
             string error = null;
